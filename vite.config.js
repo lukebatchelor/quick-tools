@@ -24,7 +24,11 @@ export default defineConfig({
         },
         orientation: 'portrait',
         screenshots: [
-          { form_factor: 'narrow', src: '/screenshot-1.png', sizes: '920x2048', type: 'image/png' }
+          { form_factor: 'narrow', src: '/screenshot-1.png', sizes: '920x2048', type: 'image/png' },
+          { form_factor: 'narrow', src: '/screenshot-2.png', sizes: '920x2048', type: 'image/png' },
+          { form_factor: 'narrow', src: '/screenshot-3.png', sizes: '920x2048', type: 'image/png' },
+          { form_factor: 'narrow', src: '/screenshot-4.png', sizes: '920x2048', type: 'image/png' },
+          { form_factor: 'narrow', src: '/screenshot-5.png', sizes: '920x2048', type: 'image/png' },
         ],
         categories: ['utilities', 'productivity'],
         icons: [
