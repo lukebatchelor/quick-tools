@@ -4,6 +4,8 @@ import { Home, Image, Shuffle, Calculator, Sun, Moon, Search } from 'lucide-reac
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import PWAUpdateNotification from '@/components/PWAUpdateNotification';
+
 
 const ImageConverter = lazy(() => import('./components/ImageConverter'));
 const RandomChoiceGenerator = lazy(() => import('./components/RandomChoiceGenerator'));
@@ -24,6 +26,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/:toolPath" element={<ToolPage />} />
           </Routes>
+          <PWAUpdateNotification />
         </div>
       </Router>
     </ThemeProvider>
