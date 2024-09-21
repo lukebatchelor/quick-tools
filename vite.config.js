@@ -12,11 +12,19 @@ export default defineConfig({
       includeAssets: ["favicon-32x32.png", "apple-touch-icon.png"],
       manifestFilename: 'site.webmanifest',
       manifest: {
+        id: 'lbatch-quick-tools',
         name: "Quick Tools",
         short_name: "QuickTools",
         description: "A collection of handy tools",
         theme_color: "#ffffff",
         start_url: '/',
+        launch_handler: {
+          client_mode: 'auto'
+        },
+        orientation: 'portrait',
+        screenshots: [
+          { form_factor: 'narrow', src: '/screenshot-1.png', sizes: '920x2048', type: 'image/png' }
+        ],
         icons: [
           {
             src: "android-chrome-192x192.png",
