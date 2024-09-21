@@ -47,7 +47,7 @@ function HomePage() {
             <Home className="w-6 h-6" />
           </Button>
         </div>
-        <h1 className="text-2xl font-bold flex-1 text-center">Quick Tools</h1>
+        <h1 className="text-2xl font-bold text-center">Quick Tools</h1>
         <div className="flex-1 flex justify-end">
           <Button onClick={toggleDarkMode} variant="ghost" size="icon" className="text-white">
             {isDarkMode ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
