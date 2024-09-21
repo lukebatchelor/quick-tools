@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Route, Link, Routes, useNavigate, useParams } from 'react-router-dom';
-import { Home, Image, Shuffle, Calculator, QrCode, Sun, Moon, Search, Type } from 'lucide-react';
+import { Home, Image, Shuffle, Calculator, QrCode, Sun, Moon, Search, Type, Edit } from 'lucide-react';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,8 +12,7 @@ const RandomChoiceGenerator = lazy(() => import('./tools/RandomChoiceGenerator')
 const PrintingCostCalculator = lazy(() => import('./tools/PrintingCostCalculator'));
 const QRCodeGenerator = lazy(() => import('./tools/QRCodeGenerator'));
 const FancyTextGenerator = lazy(() => import('./tools/FancyTextGenerator'));
-
-
+const ImageEditor = lazy(() => import('./tools/ImageEditor'));
 
 const tools = [
   { name: 'Image Converter', icon: Image, path: '/image-converter', component: ImageConverter },
@@ -21,6 +20,7 @@ const tools = [
   { name: '3D Print Cost', icon: Calculator, path: '/printing-cost', component: PrintingCostCalculator },
   { name: 'QR Generator', icon: QrCode, path: '/qr-generator', component: QRCodeGenerator },
   { name: 'Fancy Text', icon: Type, path: '/fancy-text', component: FancyTextGenerator },
+  { name: 'Image Editor', icon: Edit, path: '/image-editor', component: ImageEditor },
 ];
 
 function App() {
