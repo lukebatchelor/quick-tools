@@ -3,6 +3,7 @@ import Confetti from 'react-confetti';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 function RandomChoiceGenerator() {
   const [question, setQuestion] = useState('');
@@ -11,6 +12,7 @@ function RandomChoiceGenerator() {
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const { isDarkMode } = useTheme();
 
   const addChoice = () => {
     if (currentChoice.trim() !== '') {
@@ -60,13 +62,13 @@ function RandomChoiceGenerator() {
   }, [showConfetti]);
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isDarkMode ? 'dark' : ''}`}>
       <Input
         type="text"
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
         placeholder="Enter your question"
-        className="w-full"
+        className="w-full bg-white dark:bg-gray-700 text-black dark:text-white"
       />
       <div className="flex space-x-2">
         <Input
@@ -74,15 +76,15 @@ function RandomChoiceGenerator() {
           value={currentChoice}
           onChange={(e) => setCurrentChoice(e.target.value)}
           placeholder="Enter a choice"
-          className="flex-grow"
+          className="flex-grow bg-white dark:bg-gray-700 text-black dark:text-white"
         />
-        <Button onClick={addChoice}>Add</Button>
+        <Button onClick={addChoice} className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white">Add</Button>
       </div>
       <ul className="space-y-2">
         {choices.map((choice, index) => (
           <li 
             key={index} 
-            className={`p-2 bg-white rounded-md shadow flex justify-between items-center ${choice.selected ? 'text-gray-400' : ''}`}
+            className={`p-2 bg-white dark:bg-gray-700 rounded-md shadow flex justify-between items-center ${choice.selected ? 'text-gray-400 dark:text-gray-500' : 'text-black dark:text-white'}`}
           >
             <span 
               className={`flex-grow cursor-pointer ${choice.selected ? 'line-through' : ''}`}
@@ -94,7 +96,7 @@ function RandomChoiceGenerator() {
               variant="ghost" 
               size="icon"
               onClick={() => deleteChoice(index)}
-              className="text-red-500 hover:text-red-700"
+              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
             >
               <X size={18} />
             </Button>
@@ -104,12 +106,12 @@ function RandomChoiceGenerator() {
       <Button 
         onClick={selectRandomChoice} 
         disabled={isAnimating || choices.length === 0}
-        className="w-full"
+        className="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
       >
         Choose Random
       </Button>
       {selectedChoice && (
-        <div className="text-3xl font-bold text-center p-4 bg-blue-100 rounded-lg">
+        <div className="text-3xl font-bold text-center p-4 bg-blue-100 dark:bg-blue-900 rounded-lg text-black dark:text-white">
           {selectedChoice}
         </div>
       )}
