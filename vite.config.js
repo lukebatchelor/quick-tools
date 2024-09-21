@@ -16,7 +16,8 @@ export default defineConfig({
         name: "Quick Tools",
         short_name: "QuickTools",
         description: "A collection of handy tools",
-        theme_color: "#ffffff",
+        theme_color: "#292524",
+        background_color: '#111827',
         start_url: '/',
         launch_handler: {
           client_mode: 'auto'
@@ -25,6 +26,7 @@ export default defineConfig({
         screenshots: [
           { form_factor: 'narrow', src: '/screenshot-1.png', sizes: '920x2048', type: 'image/png' }
         ],
+        categories: ['utilities', 'productivity'],
         icons: [
           {
             src: "android-chrome-192x192.png",
