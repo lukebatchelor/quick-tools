@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Route, Link, Routes, useNavigate, useParams } from 'react-router-dom';
-import { Home, Image, Shuffle, Calculator, Sun, Moon, Search } from 'lucide-react';
+import { Home, Image, Shuffle, Calculator, QrCode, Sun, Moon, Search } from 'lucide-react';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,11 +10,13 @@ import PWAUpdateNotification from '@/components/PWAUpdateNotification';
 const ImageConverter = lazy(() => import('./components/ImageConverter'));
 const RandomChoiceGenerator = lazy(() => import('./components/RandomChoiceGenerator'));
 const PrintingCostCalculator = lazy(() => import('./components/PrintingCostCalculator'));
+const QRCodeGenerator = lazy(() => import('./components/QRCodeGenerator'));
 
 const tools = [
   { name: 'Image Converter', icon: Image, path: '/image-converter', component: ImageConverter },
   { name: 'Random Choice', icon: Shuffle, path: '/random-choice', component: RandomChoiceGenerator },
   { name: '3D Print Cost', icon: Calculator, path: '/printing-cost', component: PrintingCostCalculator },
+  { name: 'QR Generator', icon: QrCode, path: '/qr-generator', component: QRCodeGenerator },
 ];
 
 function App() {
