@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
 import { useTheme } from '../ThemeContext';
+import { Upload } from 'lucide-react';
 
 function ImageConverter() {
   const [originalFile, setOriginalFile] = useState(null);
@@ -47,10 +47,28 @@ function ImageConverter() {
     reader.readAsDataURL(originalFile);
   };
 
+  const ImagePreview = ({ src, alt }) => {
+    return (
+      <div className="w-full flex justify-center items-center" style={{ maxHeight: '70vh' }}>
+        <img
+          src={src}
+          alt={alt}
+          className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-md"
+        />
+      </div>
+    );
+  };
+
   return (
     <div className={`space-y-6 ${isDarkMode ? 'dark' : ''}`}>
-      <div>
-        <Label htmlFor="image-upload" className="block mb-2 dark:text-white">Upload Image</Label>
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold dark:text-white">Image Converter</h2>
+        <p className="text-gray-600 dark:text-gray-300">
+          Convert your images to different formats with ease. Start by uploading an image below.
+        </p>
+      </div>
+
+      <div className="flex flex-col items-center space-y-4">
         <input
           id="image-upload"
           type="file"
@@ -59,16 +77,27 @@ function ImageConverter() {
           ref={fileInputRef}
           className="hidden"
         />
-        <Button onClick={() => fileInputRef.current.click()} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
-          Choose File
+        <Button 
+          onClick={() => fileInputRef.current.click()} 
+          className="w-64 h-32 flex flex-col items-center justify-center bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg shadow-md transition-all duration-300"
+        >
+          <Upload size={32} className="mb-2" />
+          <span>Choose Image</span>
         </Button>
+        {!originalImage && (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Supported formats: JPEG, PNG, WebP
+          </p>
+        )}
       </div>
 
       {originalImage && (
-        <div className="space-y-4">
-          <img src={originalImage} alt="Original" className="w-full rounded-lg shadow-md" />
-          <p className="dark:text-white">Format: {originalFormat}</p>
-          <p className="dark:text-white">Size: {(originalSize / 1024).toFixed(2)} KB</p>
+        <div className="space-y-6">
+          <ImagePreview src={originalImage} alt="Original" />
+          <div className="flex flex-col sm:flex-row sm:justify-between space-y-2 sm:space-y-0 sm:space-x-4">
+            <p className="dark:text-white">Format: {originalFormat}</p>
+            <p className="dark:text-white">Size: {(originalSize / 1024).toFixed(2)} KB</p>
+          </div>
           
           <Select value={targetFormat} onValueChange={setTargetFormat}>
             <SelectTrigger className="dark:bg-gray-700 dark:text-white">
@@ -81,16 +110,18 @@ function ImageConverter() {
             </SelectContent>
           </Select>
 
-          <Button onClick={convertImage} className="w-full dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">Convert</Button>
+          <Button onClick={convertImage} className="w-full bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white">Convert</Button>
         </div>
       )}
 
       {convertedImage && (
-        <div className="space-y-4">
-          <img src={convertedImage} alt="Converted" className="w-full rounded-lg shadow-md" />
-          <p className="dark:text-white">Converted size: {(convertedSize / 1024).toFixed(2)} KB</p>
-          <p className="dark:text-white">Size difference: {((convertedSize - originalSize) / 1024).toFixed(2)} KB</p>
-          <Button asChild className="w-full dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
+        <div className="space-y-6">
+          <ImagePreview src={convertedImage} alt="Converted" />
+          <div className="flex flex-col sm:flex-row sm:justify-between space-y-2 sm:space-y-0 sm:space-x-4">
+            <p className="dark:text-white">Converted size: {(convertedSize / 1024).toFixed(2)} KB</p>
+            <p className="dark:text-white">Size difference: {((convertedSize - originalSize) / 1024).toFixed(2)} KB</p>
+          </div>
+          <Button asChild className="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white">
             <a href={convertedImage} download={`converted.${targetFormat}`}>
               Download Converted Image
             </a>
