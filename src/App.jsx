@@ -13,6 +13,7 @@ const PrintingCostCalculator = lazy(() => import('./tools/PrintingCostCalculator
 const QRCodeGenerator = lazy(() => import('./tools/QRCodeGenerator'));
 const FancyTextGenerator = lazy(() => import('./tools/FancyTextGenerator'));
 const ImageEditor = lazy(() => import('./tools/ImageEditor'));
+const BahtConverter = lazy(() => import('./tools/BahtToAudConverter'));
 
 const tools = [
   { name: 'Image Converter', icon: Image, path: '/image-converter', component: ImageConverter },
@@ -21,6 +22,8 @@ const tools = [
   { name: 'QR Generator', icon: QrCode, path: '/qr-generator', component: QRCodeGenerator },
   { name: 'Fancy Text', icon: Type, path: '/fancy-text', component: FancyTextGenerator },
   { name: 'Image Editor', icon: Edit, path: '/image-editor', component: ImageEditor },
+  { name: 'Baht Converter', icon: Calculator, path: '/baht-converter', component: BahtConverter },
+  
 ];
 
 function App() {
