@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Route, Link, Routes, useNavigate, useParams } from 'react-router-dom';
-import { Home, Image, Shuffle, Calculator, QrCode, Sun, Moon, Search, Type, Edit } from 'lucide-react';
+import { Home, Image, Shuffle, Calculator, QrCode, Sun, Moon, Search, Type, Edit, MessageSquare } from 'lucide-react';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ const QRCodeGenerator = lazy(() => import('./tools/QRCodeGenerator'));
 const FancyTextGenerator = lazy(() => import('./tools/FancyTextGenerator'));
 const ImageEditor = lazy(() => import('./tools/ImageEditor'));
 const BahtConverter = lazy(() => import('./tools/BahtToAudConverter'));
+const FrinkiacQuote = lazy(() => import('./tools/FrinkiacQuote'));
 
 const tools = [
   { name: 'Image Converter', icon: Image, path: '/image-converter', component: ImageConverter },
@@ -23,7 +24,8 @@ const tools = [
   { name: 'Fancy Text', icon: Type, path: '/fancy-text', component: FancyTextGenerator },
   { name: 'Image Editor', icon: Edit, path: '/image-editor', component: ImageEditor },
   { name: 'Baht Converter', icon: Calculator, path: '/baht-converter', component: BahtConverter },
-  
+  { name: 'Frinkiac Quote', icon: MessageSquare, path: '/frinkiac-quote', component: FrinkiacQuote },
+
 ];
 
 function App() {
