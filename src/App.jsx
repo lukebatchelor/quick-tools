@@ -39,46 +39,57 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
-    this.state = { hasError: true, error, errorInfo };
+    this.setState({ hasError: true, error, errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <div className="max-w-4xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-8 h-8 text-red-500" />
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Something went wrong
+                Error in {this.props.toolName}
               </h2>
             </div>
             
-            <div className="mb-4">
-              <p className="text-gray-700 dark:text-gray-300 mb-2">
-                The tool encountered an error and couldn't load properly.
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Tool: <span className="font-semibold">{this.props.toolName}</span>
-              </p>
-            </div>
-
             {this.state.error && (
-              <details className="mb-4">
-                <summary className="cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Error Details
-                </summary>
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3">
-                  <p className="text-sm font-mono text-red-800 dark:text-red-300 break-all">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Error Message:</h3>
+                <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-4">
+                  <p className="font-mono text-sm text-red-800 dark:text-red-300">
                     {this.state.error.toString()}
                   </p>
-                  {this.state.errorInfo && (
-                    <pre className="text-xs mt-2 text-red-700 dark:text-red-400 overflow-auto max-h-40">
-                      {this.state.errorInfo.componentStack}
-                    </pre>
+                  {this.state.error.message && this.state.error.message !== this.state.error.toString() && (
+                    <p className="font-mono text-sm text-red-700 dark:text-red-400 mt-2">
+                      {this.state.error.message}
+                    </p>
                   )}
                 </div>
-              </details>
+
+                {this.state.error.stack && (
+                  <div className="mb-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Stack Trace:</h3>
+                    <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded p-4 overflow-auto max-h-64">
+                      <pre className="text-xs font-mono text-gray-800 dark:text-gray-300 whitespace-pre-wrap">
+                        {this.state.error.stack}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {this.state.errorInfo && this.state.errorInfo.componentStack && (
+                  <div className="mb-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Component Stack:</h3>
+                    <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded p-4 overflow-auto max-h-64">
+                      <pre className="text-xs font-mono text-gray-800 dark:text-gray-300 whitespace-pre-wrap">
+                        {this.state.errorInfo.componentStack}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="flex gap-3">
@@ -121,30 +132,38 @@ function LoadingFallback() {
 // Lazy Loading Error Fallback
 function LazyLoadError({ error, toolName }) {
   return (
-    <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-8">
+    <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-8">
       <div className="flex items-center gap-3 mb-4">
         <AlertTriangle className="w-8 h-8 text-orange-500" />
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Failed to load tool
+          Failed to load: {toolName}
         </h2>
       </div>
       
       <p className="text-gray-700 dark:text-gray-300 mb-4">
-        The <span className="font-semibold">{toolName}</span> tool couldn't be loaded. 
-        This might be due to a network issue or the tool file might be missing.
+        The tool couldn't be loaded. This might be due to a network issue or the tool file might be missing.
       </p>
 
       {error && (
-        <details className="mb-4">
-          <summary className="cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            Error Details
-          </summary>
-          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded p-3">
-            <p className="text-sm font-mono text-orange-800 dark:text-orange-300 break-all">
+        <div className="mb-4">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Error Details:</h3>
+          <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 p-4 mb-4">
+            <p className="font-mono text-sm text-orange-800 dark:text-orange-300 whitespace-pre-wrap">
               {error.toString()}
             </p>
           </div>
-        </details>
+          
+          {error.stack && (
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Stack Trace:</h3>
+              <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded p-4 overflow-auto max-h-64">
+                <pre className="text-xs font-mono text-gray-800 dark:text-gray-300 whitespace-pre-wrap">
+                  {error.stack}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="flex gap-3">
