@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Trash2, Edit2, Save, X, Database } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { Trash2, Save, X, Database } from 'lucide-react';
 
 export default function EVRangeEstimator() {
   const [dataPoints, setDataPoints] = useState([]);
@@ -8,11 +8,12 @@ export default function EVRangeEstimator() {
     time: '',
     distanceToDestination: '',
     batteryPercent: '',
-    carEstimatedRange: ''
+    carEstimatedRange: '',
+    minutesRemaining: ''
   });
-  const [editingId, setEditingId] = useState(null);
   const [showCSVModal, setShowCSVModal] = useState(false);
   const [csvText, setCSVText] = useState('');
+  const [showProjection, setShowProjection] = useState(false);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -24,22 +25,16 @@ export default function EVRangeEstimator() {
 
   const saveDataPoint = () => {
     const newPoint = {
-      id: editingId || Date.now(),
+      id: Date.now(),
       time: formData.time,
       distanceToDestination: parseFloat(formData.distanceToDestination),
       batteryPercent: parseFloat(formData.batteryPercent),
       carEstimatedRange: parseFloat(formData.carEstimatedRange),
-      timestamp: editingId ? dataPoints.find(p => p.id === editingId).timestamp : new Date().toISOString()
+      minutesRemaining: parseFloat(formData.minutesRemaining),
+      timestamp: new Date().toISOString()
     };
 
-    let updatedPoints;
-    if (editingId) {
-      updatedPoints = dataPoints.map(p => p.id === editingId ? newPoint : p);
-      setEditingId(null);
-    } else {
-      updatedPoints = [...dataPoints, newPoint];
-    }
-
+    const updatedPoints = [...dataPoints, newPoint];
     updatedPoints.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     setDataPoints(updatedPoints);
     localStorage.setItem('evRangeData', JSON.stringify(updatedPoints));
@@ -48,7 +43,8 @@ export default function EVRangeEstimator() {
       time: '',
       distanceToDestination: '',
       batteryPercent: '',
-      carEstimatedRange: ''
+      carEstimatedRange: '',
+      minutesRemaining: ''
     });
   };
 
@@ -56,26 +52,6 @@ export default function EVRangeEstimator() {
     const updatedPoints = dataPoints.filter(p => p.id !== id);
     setDataPoints(updatedPoints);
     localStorage.setItem('evRangeData', JSON.stringify(updatedPoints));
-  };
-
-  const editDataPoint = (point) => {
-    setEditingId(point.id);
-    setFormData({
-      time: point.time,
-      distanceToDestination: point.distanceToDestination.toString(),
-      batteryPercent: point.batteryPercent.toString(),
-      carEstimatedRange: point.carEstimatedRange.toString()
-    });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setFormData({
-      time: '',
-      distanceToDestination: '',
-      batteryPercent: '',
-      carEstimatedRange: ''
-    });
   };
 
   const clearAllData = () => {
@@ -90,6 +66,30 @@ export default function EVRangeEstimator() {
     setShowCSVModal(true);
   };
 
+  const getCSVContent = () => {
+    const headers = ['Time', 'Distance (km)', 'Minutes to Destination', 'Battery %', 'Car Range (km)'];
+    const rows = dataPoints.map(point => [
+      point.time,
+      point.distanceToDestination,
+      point.minutesRemaining,
+      point.batteryPercent,
+      point.carEstimatedRange
+    ]);
+    
+    return [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+  };
+
+  const getCSVHeaders = () => {
+    return 'Time,Distance (km),Minutes to Destination,Battery %,Car Range (km)';
+  };
+
+  const clearCSV = () => {
+    setCSVText(getCSVHeaders());
+  };
+
   const saveCSVData = () => {
     try {
       const lines = csvText.trim().split('\n');
@@ -98,17 +98,17 @@ export default function EVRangeEstimator() {
         return;
       }
 
-      // Skip header, parse data rows
       const newDataPoints = [];
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',');
-        if (values.length === 4) {
+        if (values.length >= 5) {
           newDataPoints.push({
             id: Date.now() + i,
             time: values[0].trim(),
             distanceToDestination: parseFloat(values[1].trim()),
-            batteryPercent: parseFloat(values[2].trim()),
-            carEstimatedRange: parseFloat(values[3].trim()),
+            minutesRemaining: parseFloat(values[2].trim()),
+            batteryPercent: parseFloat(values[3].trim()),
+            carEstimatedRange: parseFloat(values[4].trim()),
             timestamp: new Date().toISOString()
           });
         }
@@ -126,29 +126,14 @@ export default function EVRangeEstimator() {
       alert('Data imported successfully!');
     } catch (error) {
       alert('Error parsing CSV. Please check the format.');
+      console.error(error);
     }
-  };
-
-  const getCSVContent = () => {
-    const headers = ['Time', 'Distance to Destination (km)', 'Battery %', 'Car Estimated Range (km)'];
-    const rows = dataPoints.map(point => [
-      point.time,
-      point.distanceToDestination,
-      point.batteryPercent,
-      point.carEstimatedRange
-    ]);
-    
-    return [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
   };
 
   // Calculate adjusted range estimate
   const calculateAdjustedEstimate = () => {
     if (dataPoints.length < 2) return null;
 
-    // Calculate the error factor from previous data points
     let totalErrorFactor = 0;
     let validPoints = 0;
 
@@ -228,42 +213,10 @@ export default function EVRangeEstimator() {
   const errorFactorData = getErrorFactorData();
   const regression = linearRegression(errorFactorData);
 
-  // Generate regression line points
-  const regressionChartData = errorFactorData.length > 0 ? (() => {
-    const minBattery = Math.min(...errorFactorData.map(d => d.battery));
-    const maxBattery = Math.max(...errorFactorData.map(d => d.battery));
-    const result = [];
-    
-    // Add actual data points
-    errorFactorData.forEach(point => {
-      result.push({
-        battery: point.battery,
-        'Actual Error Factor': point.errorFactor,
-        'Trend Line': regression ? regression.slope * point.battery + regression.intercept : null
-      });
-    });
-
-    // Add trend line points at 1% intervals for smooth line
-    if (regression) {
-      for (let battery = Math.floor(minBattery); battery <= Math.ceil(maxBattery); battery += 1) {
-        if (!result.find(p => p.battery === battery)) {
-          result.push({
-            battery: battery,
-            'Actual Error Factor': null,
-            'Trend Line': regression.slope * battery + regression.intercept
-          });
-        }
-      }
-    }
-
-    return result.sort((a, b) => b.battery - a.battery); // Sort descending for reversed axis
-  })() : [];
-
   // Prepare chart data with adjusted estimates
   const chartData = dataPoints.map((point, idx) => {
     let adjustedEstimate = null;
     
-    // Calculate adjusted estimate based on data up to this point
     if (idx > 0) {
       let totalErrorFactor = 0;
       let validPoints = 0;
@@ -293,9 +246,128 @@ export default function EVRangeEstimator() {
       'Distance to Destination': point.distanceToDestination,
       'Car Estimated Range': point.carEstimatedRange,
       'Adjusted Estimate': adjustedEstimate,
-      'Battery %': point.batteryPercent
+      'Battery %': point.batteryPercent,
+      isProjection: false
     };
   });
+
+  // Generate projection data
+  const generateProjection = () => {
+    if (dataPoints.length < 2) return [];
+
+    const latestPoint = dataPoints[dataPoints.length - 1];
+    const currentEstimate = calculateAdjustedEstimate();
+    
+    if (!currentEstimate || !latestPoint.minutesRemaining) return [];
+
+    let totalDistanceRate = 0;
+    let totalBatteryRate = 0;
+    let totalRangeRate = 0;
+    let validIntervals = 0;
+
+    for (let i = 1; i < dataPoints.length; i++) {
+      const prev = dataPoints[i - 1];
+      const curr = dataPoints[i];
+      
+      if (prev.minutesRemaining && curr.minutesRemaining) {
+        const timeElapsed = prev.minutesRemaining - curr.minutesRemaining;
+        if (timeElapsed > 0) {
+          totalDistanceRate += (prev.distanceToDestination - curr.distanceToDestination) / timeElapsed;
+          totalBatteryRate += (prev.batteryPercent - curr.batteryPercent) / timeElapsed;
+          totalRangeRate += (prev.carEstimatedRange - curr.carEstimatedRange) / timeElapsed;
+          validIntervals++;
+        }
+      }
+    }
+
+    if (validIntervals === 0) return [];
+
+    const avgDistanceRate = totalDistanceRate / validIntervals;
+    const avgBatteryRate = totalBatteryRate / validIntervals;
+    const avgRangeRate = totalRangeRate / validIntervals;
+
+    const projectionPoints = [];
+    let minutesElapsed = 0;
+    const maxMinutes = latestPoint.minutesRemaining;
+
+    // Project in 5-minute intervals
+    while (minutesElapsed < maxMinutes && projectionPoints.length < 20) {
+      minutesElapsed += 5;
+      
+      if (minutesElapsed > maxMinutes) break;
+      
+      const projectedDistance = Math.max(0, latestPoint.distanceToDestination - (avgDistanceRate * minutesElapsed));
+      const projectedBattery = Math.max(0, latestPoint.batteryPercent - (avgBatteryRate * minutesElapsed));
+      const projectedRange = Math.max(0, latestPoint.carEstimatedRange - (avgRangeRate * minutesElapsed));
+      const projectedAdjusted = Math.max(0, projectedRange * currentEstimate.errorFactor);
+
+      const projectedTime = new Date(new Date().getTime() + minutesElapsed * 60000);
+      const timeStr = projectedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+      projectionPoints.push({
+        name: timeStr,
+        'Distance to Destination': projectedDistance,
+        'Car Estimated Range': projectedRange,
+        'Adjusted Estimate': projectedAdjusted,
+        isProjection: true
+      });
+
+      if (projectedDistance <= 0) break;
+    }
+
+    // Add final point at exact arrival time
+    if (projectionPoints.length === 0 || minutesElapsed < maxMinutes) {
+      const finalDistance = Math.max(0, latestPoint.distanceToDestination - (avgDistanceRate * maxMinutes));
+      const finalBattery = Math.max(0, latestPoint.batteryPercent - (avgBatteryRate * maxMinutes));
+      const finalRange = Math.max(0, latestPoint.carEstimatedRange - (avgRangeRate * maxMinutes));
+      const finalAdjusted = Math.max(0, finalRange * currentEstimate.errorFactor);
+
+      const finalTime = new Date(new Date().getTime() + maxMinutes * 60000);
+      const timeStr = finalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+      projectionPoints.push({
+        name: timeStr,
+        'Distance to Destination': finalDistance,
+        'Car Estimated Range': finalRange,
+        'Adjusted Estimate': finalAdjusted,
+        isProjection: true
+      });
+    }
+
+    return projectionPoints;
+  };
+
+  const projectionData = showProjection ? generateProjection() : [];
+  const combinedChartData = showProjection ? [...chartData, ...projectionData] : chartData;
+
+  // Generate regression line points
+  const regressionChartData = errorFactorData.length > 0 ? (() => {
+    const minBattery = Math.min(...errorFactorData.map(d => d.battery));
+    const maxBattery = Math.max(...errorFactorData.map(d => d.battery));
+    const result = [];
+    
+    errorFactorData.forEach(point => {
+      result.push({
+        battery: point.battery,
+        'Actual Error Factor': point.errorFactor,
+        'Trend Line': regression ? regression.slope * point.battery + regression.intercept : null
+      });
+    });
+
+    if (regression) {
+      for (let battery = Math.floor(minBattery); battery <= Math.ceil(maxBattery); battery += 1) {
+        if (!result.find(p => p.battery === battery)) {
+          result.push({
+            battery: battery,
+            'Actual Error Factor': null,
+            'Trend Line': regression.slope * battery + regression.intercept
+          });
+        }
+      }
+    }
+
+    return result.sort((a, b) => b.battery - a.battery);
+  })() : [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 pb-24">
@@ -320,14 +392,20 @@ export default function EVRangeEstimator() {
                 onChange={(e) => setCSVText(e.target.value)}
                 className="w-full h-64 p-3 border border-gray-300 rounded-md font-mono text-sm"
               />
-              <div className="flex justify-between items-center mt-4">
-                <p className="text-sm text-gray-600">Edit the CSV data and click Save to import changes</p>
+              <p className="text-sm text-gray-600 mt-4 mb-2">Edit the CSV data and click Save to import changes</p>
+              <div className="flex gap-2">
                 <button
                   onClick={saveCSVData}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   <Save size={16} />
                   Save Changes
+                </button>
+                <button
+                  onClick={clearCSV}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                >
+                  Clear
                 </button>
               </div>
             </div>
@@ -336,10 +414,8 @@ export default function EVRangeEstimator() {
 
         {/* Input Form */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">
-            {editingId ? 'Edit Data Point' : 'Add Data Point'}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <h2 className="text-xl font-semibold mb-4">Add Data Point</h2>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Time
@@ -360,6 +436,18 @@ export default function EVRangeEstimator() {
                 step="0.1"
                 value={formData.distanceToDestination}
                 onChange={(e) => setFormData({...formData, distanceToDestination: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Minutes to Destination
+              </label>
+              <input
+                type="number"
+                step="1"
+                value={formData.minutesRemaining}
+                onChange={(e) => setFormData({...formData, minutesRemaining: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -391,21 +479,12 @@ export default function EVRangeEstimator() {
           <div className="flex gap-2">
             <button
               onClick={saveDataPoint}
-              disabled={!formData.time || !formData.distanceToDestination || !formData.batteryPercent || !formData.carEstimatedRange}
+              disabled={!formData.time || !formData.distanceToDestination || !formData.batteryPercent || !formData.carEstimatedRange || !formData.minutesRemaining}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               <Save size={16} />
-              {editingId ? 'Update' : 'Save'}
+              Save
             </button>
-            {editingId && (
-              <button
-                onClick={cancelEdit}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-              >
-                <X size={16} />
-                Cancel
-              </button>
-            )}
             {dataPoints.length > 0 && (
               <button
                 onClick={clearAllData}
@@ -451,17 +530,70 @@ export default function EVRangeEstimator() {
         {/* Chart */}
         {dataPoints.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Range Over Time</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Range Over Time</h2>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showProjection}
+                  onChange={(e) => setShowProjection(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-medium">Show Projection</span>
+              </label>
+            </div>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
+              <LineChart data={combinedChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <YAxis tickFormatter={(value) => value.toFixed(2)} />
+                <Tooltip formatter={(value) => (typeof value === 'number' ? value.toFixed(2) : value)} />
                 <Legend />
-                <Line type="monotone" dataKey="Distance to Destination" stroke="#ef4444" strokeWidth={2} />
-                <Line type="monotone" dataKey="Car Estimated Range" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="Adjusted Estimate" stroke="#10b981" strokeWidth={2} strokeDasharray="3 3" dot={{ fill: '#10b981', strokeWidth: 0 }} />
+                
+                {/* Vertical line at the last actual data point */}
+                {showProjection && chartData.length > 0 && (
+                  <ReferenceLine 
+                    x={chartData[chartData.length - 1].name} 
+                    stroke="#666" 
+                    strokeWidth={2}
+                    strokeDasharray="3 3"
+                    label={{ value: 'Projection →', position: 'top', fill: '#666', fontSize: 12 }}
+                  />
+                )}
+                
+                <Line 
+                  type="monotone" 
+                  dataKey="Distance to Destination" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  dot={(props) => {
+                    const { payload, cx, cy } = props;
+                    if (payload.isProjection) return null;
+                    return <circle cx={cx} cy={cy} r={4} fill="#ef4444" />;
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Car Estimated Range" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={(props) => {
+                    const { payload, cx, cy } = props;
+                    if (payload.isProjection) return null;
+                    return <circle cx={cx} cy={cy} r={4} fill="#3b82f6" />;
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Adjusted Estimate" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  dot={(props) => {
+                    const { payload, cx, cy } = props;
+                    if (payload.isProjection) return null;
+                    return <circle cx={cx} cy={cy} r={4} fill="#10b981" />;
+                  }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -532,9 +664,10 @@ export default function EVRangeEstimator() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-2 px-4">Time</th>
-                    <th className="text-left py-2 px-4">Distance to Dest. (km)</th>
+                    <th className="text-left py-2 px-4">Distance (km)</th>
+                    <th className="text-left py-2 px-4">Minutes Left</th>
                     <th className="text-left py-2 px-4">Battery %</th>
-                    <th className="text-left py-2 px-4">Car Est. Range (km)</th>
+                    <th className="text-left py-2 px-4">Car Range (km)</th>
                     <th className="text-left py-2 px-4">Actions</th>
                   </tr>
                 </thead>
@@ -542,24 +675,17 @@ export default function EVRangeEstimator() {
                   {dataPoints.map((point) => (
                     <tr key={point.id} className="border-b hover:bg-gray-50">
                       <td className="py-2 px-4">{point.time}</td>
-                      <td className="py-2 px-4">{point.distanceToDestination}</td>
-                      <td className="py-2 px-4">{point.batteryPercent}%</td>
-                      <td className="py-2 px-4">{point.carEstimatedRange}</td>
+                      <td className="py-2 px-4">{point.distanceToDestination.toFixed(2)}</td>
+                      <td className="py-2 px-4">{point.minutesRemaining.toFixed(0)}</td>
+                      <td className="py-2 px-4">{point.batteryPercent.toFixed(2)}%</td>
+                      <td className="py-2 px-4">{point.carEstimatedRange.toFixed(2)}</td>
                       <td className="py-2 px-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => editDataPoint(point)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => deleteDataPoint(point.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => deleteDataPoint(point.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}
