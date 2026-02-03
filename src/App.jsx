@@ -14,7 +14,7 @@ const QRCodeGenerator = lazy(() => import('./tools/QRCodeGenerator'));
 const FancyTextGenerator = lazy(() => import('./tools/FancyTextGenerator'));
 const ImageEditor = lazy(() => import('./tools/ImageEditor'));
 const BahtConverter = lazy(() => import('./tools/BahtToAudConverter'));
-const EVRangeEstimator = lazy(()= import('./tools/EVRangeEstimator'));
+const EVRangeEstimator = lazy(() => import('./tools/EVRangeEstimator'));
 
 const tools = [
   { name: 'Image Converter', icon: Image, path: '/image-converter', component: ImageConverter },
