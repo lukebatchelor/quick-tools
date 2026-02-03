@@ -259,13 +259,43 @@ export default function EVRangeEstimator() {
     return result.sort((a, b) => b.battery - a.battery); // Sort descending for reversed axis
   })() : [];
 
-  // Prepare chart data
-  const chartData = dataPoints.map((point, idx) => ({
-    name: point.time,
-    'Distance to Destination': point.distanceToDestination,
-    'Car Estimated Range': point.carEstimatedRange,
-    'Battery %': point.batteryPercent
-  }));
+  // Prepare chart data with adjusted estimates
+  const chartData = dataPoints.map((point, idx) => {
+    let adjustedEstimate = null;
+    
+    // Calculate adjusted estimate based on data up to this point
+    if (idx > 0) {
+      let totalErrorFactor = 0;
+      let validPoints = 0;
+      
+      for (let i = 1; i <= idx; i++) {
+        const prev = dataPoints[i - 1];
+        const curr = dataPoints[i];
+        
+        const actualDistanceTraveled = prev.distanceToDestination - curr.distanceToDestination;
+        const estimatedDistanceTraveled = prev.carEstimatedRange - curr.carEstimatedRange;
+        
+        if (estimatedDistanceTraveled > 0 && actualDistanceTraveled > 0) {
+          const errorFactor = actualDistanceTraveled / estimatedDistanceTraveled;
+          totalErrorFactor += errorFactor;
+          validPoints++;
+        }
+      }
+      
+      if (validPoints > 0) {
+        const avgErrorFactor = totalErrorFactor / validPoints;
+        adjustedEstimate = point.carEstimatedRange * avgErrorFactor;
+      }
+    }
+    
+    return {
+      name: point.time,
+      'Distance to Destination': point.distanceToDestination,
+      'Car Estimated Range': point.carEstimatedRange,
+      'Adjusted Estimate': adjustedEstimate,
+      'Battery %': point.batteryPercent
+    };
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 pb-24">
@@ -431,6 +461,7 @@ export default function EVRangeEstimator() {
                 <Legend />
                 <Line type="monotone" dataKey="Distance to Destination" stroke="#ef4444" strokeWidth={2} />
                 <Line type="monotone" dataKey="Car Estimated Range" stroke="#3b82f6" strokeWidth={2} />
+                <Line type="monotone" dataKey="Adjusted Estimate" stroke="#10b981" strokeWidth={2} strokeDasharray="3 3" dot={{ fill: '#10b981', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
