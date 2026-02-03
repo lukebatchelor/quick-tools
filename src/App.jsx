@@ -14,6 +14,7 @@ const QRCodeGenerator = lazy(() => import('./tools/QRCodeGenerator'));
 const FancyTextGenerator = lazy(() => import('./tools/FancyTextGenerator'));
 const ImageEditor = lazy(() => import('./tools/ImageEditor'));
 const BahtConverter = lazy(() => import('./tools/BahtToAudConverter'));
+const EVRangeEstimator = lazy(()= import('./tools/EVRangeEstimator'));
 
 const tools = [
   { name: 'Image Converter', icon: Image, path: '/image-converter', component: ImageConverter },
@@ -23,6 +24,7 @@ const tools = [
   { name: 'Fancy Text', icon: Type, path: '/fancy-text', component: FancyTextGenerator },
   { name: 'Image Editor', icon: Edit, path: '/image-editor', component: ImageEditor },
   { name: 'Baht Converter', icon: Calculator, path: '/baht-converter', component: BahtConverter },
+  { name: 'EV Range Est', icon: Calculator, path: '/ev-range-estimator', component: EVRangeEstimator },
   
 ];
 
