@@ -523,4 +523,178 @@ export default function EVRangeEstimator() {
             </div>
             <div className="mt-4 text-sm text-gray-600">
               Error Factor: {estimate.errorFactor.toFixed(3)} (Car estimates are {estimate.errorFactor > 1 ? 'conservative' : 'optimistic'} by {Math.abs((1 - estimate.errorFactor) * 100).toFixed(1)}%)
-      
+            </div>
+          </div>
+        )}
+
+        {/* Chart */}
+        {dataPoints.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Range Over Time</h2>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showProjection}
+                  onChange={(e) => setShowProjection(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-medium">Show Projection</span>
+              </label>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={combinedChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value) => value.toFixed(2)} />
+                <Tooltip formatter={(value) => (typeof value === 'number' ? value.toFixed(2) : value)} />
+                <Legend />
+                
+                {/* Vertical line at the last actual data point */}
+                {showProjection && chartData.length > 0 && (
+                  <ReferenceLine 
+                    x={chartData[chartData.length - 1].name} 
+                    stroke="#666" 
+                    strokeWidth={2}
+                    strokeDasharray="3 3"
+                    label={{ value: 'Projection →', position: 'top', fill: '#666', fontSize: 12 }}
+                  />
+                )}
+                
+                <Line 
+                  type="monotone" 
+                  dataKey="Distance to Destination" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  dot={(props) => {
+                    const { payload, cx, cy } = props;
+                    if (payload.isProjection) return null;
+                    return <circle cx={cx} cy={cy} r={4} fill="#ef4444" />;
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Car Estimated Range" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={(props) => {
+                    const { payload, cx, cy } = props;
+                    if (payload.isProjection) return null;
+                    return <circle cx={cx} cy={cy} r={4} fill="#3b82f6" />;
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Adjusted Estimate" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  dot={(props) => {
+                    const { payload, cx, cy } = props;
+                    if (payload.isProjection) return null;
+                    return <circle cx={cx} cy={cy} r={4} fill="#10b981" />;
+                  }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Error Factor Regression Chart */}
+        {errorFactorData.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Error Factor vs Battery Level</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              This shows how the car's estimation accuracy changes as battery depletes. 
+              Values above 1.0 mean the car is conservative (you get more range than estimated).
+            </p>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={regressionChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="battery" 
+                  label={{ value: 'Battery %', position: 'insideBottom', offset: -5 }}
+                  reversed
+                  type="number"
+                  domain={['dataMin - 2', 'dataMax + 2']}
+                />
+                <YAxis 
+                  label={{ value: 'Error Factor', angle: -90, position: 'insideLeft' }}
+                  domain={[0, 'auto']}
+                />
+                <Tooltip formatter={(value) => value ? value.toFixed(3) : 'N/A'} />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="Actual Error Factor" 
+                  stroke="#10b981" 
+                  strokeWidth={0}
+                  dot={{ fill: '#10b981', r: 6 }}
+                  connectNulls={false}
+                />
+                {regression && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="Trend Line" 
+                    stroke="#8b5cf6" 
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls={true}
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Data Table */}
+        {dataPoints.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Data Points</h2>
+              <button
+                onClick={copyDataAsCSV}
+                className="p-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                title="Export/Import CSV"
+              >
+                <Database size={20} />
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-4">Time</th>
+                    <th className="text-left py-2 px-4">Distance (km)</th>
+                    <th className="text-left py-2 px-4">Minutes Left</th>
+                    <th className="text-left py-2 px-4">Battery %</th>
+                    <th className="text-left py-2 px-4">Car Range (km)</th>
+                    <th className="text-left py-2 px-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dataPoints.map((point) => (
+                    <tr key={point.id} className="border-b hover:bg-gray-50">
+                      <td className="py-2 px-4">{point.time}</td>
+                      <td className="py-2 px-4">{typeof point.distanceToDestination === 'number' ? point.distanceToDestination.toFixed(2) : point.distanceToDestination}</td>
+                      <td className="py-2 px-4">{typeof point.minutesRemaining === 'number' ? point.minutesRemaining.toFixed(0) : point.minutesRemaining}</td>
+                      <td className="py-2 px-4">{typeof point.batteryPercent === 'number' ? point.batteryPercent.toFixed(2) : point.batteryPercent}%</td>
+                      <td className="py-2 px-4">{typeof point.carEstimatedRange === 'number' ? point.carEstimatedRange.toFixed(2) : point.carEstimatedRange}</td>
+                      <td className="py-2 px-4">
+                        <button
+                          onClick={() => deleteDataPoint(point.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
